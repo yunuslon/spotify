@@ -2,13 +2,22 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:keyboard_avoider/keyboard_avoider.dart';
 import 'package:spotify/common/widgets/appbar/app_bar.dart';
 import 'package:spotify/common/widgets/button/basic_app_button.dart';
 import 'package:spotify/core/configs/assets/app_vectors.dart';
+import 'package:spotify/data/models/auth/create_user_req.dart';
+import 'package:spotify/domain/usecase/auth.dart';
+import 'package:spotify/presentation/root/pages/root.dart';
 import 'package:spotify/presentation/signup_or_signin/pages/signin.dart';
+import 'package:spotify/service_locator.dart';
 
 class SignupPage extends StatelessWidget {
-  const SignupPage({super.key});
+  SignupPage({super.key});
+
+  final TextEditingController _fullName = TextEditingController();
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _password = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -23,19 +32,41 @@ class SignupPage extends StatelessWidget {
         bottomNavigationBar: _signText(context),
         body: Padding(
           padding: const EdgeInsets.symmetric(vertical: 50.0, horizontal: 50.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _registerText(),
-              SizedBox(height: 50),
-              _fullNameField(context),
-              SizedBox(height: 20),
-              _emailField(context),
-              SizedBox(height: 20),
-              _passwordField(context),
-              SizedBox(height: 20),
-              BasicAppButton(onPressed: () {}, title: "Create Account")
-            ],
+          child: KeyboardAvoider(
+            autoScroll: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _registerText(),
+                SizedBox(height: 50),
+                _fullNameField(context),
+                SizedBox(height: 20),
+                _emailField(context),
+                SizedBox(height: 20),
+                _passwordField(context),
+                SizedBox(height: 20),
+                BasicAppButton(
+                    onPressed: () async {
+                      var result = await sl<SignupUseCase>().call(
+                          params: CreateUserReq(
+                              fullName: _fullName.text.toString(),
+                              email: _email.text.toString(),
+                              password: _password.text.toString()));
+                      result.fold((l) {
+                        var snackBar = SnackBar(content: Text(l));
+                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                      }, (r) {
+                        Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                                builder: (BuildContext context) =>
+                                    const RootPage()),
+                            (route) => false);
+                      });
+                    },
+                    title: "Create Account")
+              ],
+            ),
           ),
         ));
   }
@@ -53,6 +84,7 @@ class SignupPage extends StatelessWidget {
 
   Widget _fullNameField(BuildContext context) {
     return TextField(
+      controller: _fullName,
       decoration: InputDecoration(
         hintText: "Full Name",
       ).applyDefaults(Theme.of(context).inputDecorationTheme),
@@ -61,6 +93,7 @@ class SignupPage extends StatelessWidget {
 
   Widget _emailField(BuildContext context) {
     return TextField(
+      controller: _email,
       decoration: InputDecoration(
         hintText: "Enter Email",
       ).applyDefaults(Theme.of(context).inputDecorationTheme),
@@ -69,6 +102,7 @@ class SignupPage extends StatelessWidget {
 
   Widget _passwordField(BuildContext context) {
     return TextField(
+      controller: _password,
       obscureText: true,
       decoration: InputDecoration(
         hintText: "Password",

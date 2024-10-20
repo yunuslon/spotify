@@ -1,4 +1,4 @@
-package com.example.spotify
+package com.spotify.app
 
 import io.flutter.embedding.android.FlutterActivity
 
